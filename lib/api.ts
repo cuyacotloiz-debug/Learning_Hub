@@ -41,9 +41,24 @@ export function withMetrics(name: string, handler: (req: any, res: any, ...args:
     try {
       const result = await handler(req, res, ...args)
       try { incrementMetric(`${name}_success`).catch?.(() => {}) } catch {}
+      // record status codes if available
+      try {
+        const status = res.statusCode || 200
+        try { incrementMetric(`${name}_status_${status}`).catch?.(() => {}) } catch {}
+        const cls = Math.floor(status / 100)
+        try { incrementMetric(`${name}_status_${cls}xx`).catch?.(() => {}) } catch {}
+      } catch (e) {
+        // ignore
+      }
       return result
     } catch (err) {
       try { incrementMetric(`${name}_error`).catch?.(() => {}) } catch {}
+      try {
+        const status = res.statusCode || 500
+        try { incrementMetric(`${name}_status_${status}`).catch?.(() => {}) } catch {}
+        const cls = Math.floor(status / 100)
+        try { incrementMetric(`${name}_status_${cls}xx`).catch?.(() => {}) } catch {}
+      } catch (e) {}
       throw err
     } finally {
       try { incrementMetric(`${name}_latency_ms`, Date.now() - start).catch?.(() => {}) } catch {}
