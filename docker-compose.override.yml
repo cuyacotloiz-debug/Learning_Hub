@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  observability:
+    volumes:
+      - ./:/app:cached
+    environment:
+      - NODE_ENV=development
+    command: ["npx", "ts-node", "scripts/observability-server.ts"]
