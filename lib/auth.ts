@@ -53,10 +53,17 @@ export async function verifyRefreshToken(token: string) {
   // If token is revoked, treat as possible reuse/theft: revoke all tokens for the user and return null
   if (record.revoked) {
     try {
-      await prisma.refreshToken.updateMany({ where: { userId: record.userId }, data: { revoked: true } })
-      console.warn(`Refresh token reuse detected for user ${record.userId} — revoking all refresh tokens`)
+      // Metric and structured log for reuse detection
+      try { (await import('./metrics')).incrementMetric('refresh_token_reuse') } catch (e) {}
+      console.warn(JSON.stringify({ event: 'refresh_reuse_detected', userId: record.userId, time: new Date().toISOString() }))
+
+      const revokeAll = process.env.REFRESH_REUSE_REVOKE_ALL !== 'false'
+      if (revokeAll) {
+        await prisma.refreshToken.updateMany({ where: { userId: record.userId }, data: { revoked: true } })
+        console.warn(`Revoked all refresh tokens for user ${record.userId} due to reuse detection`)
+      }
     } catch (e) {
-      console.error('Failed to revoke all refresh tokens on reuse detection', e)
+      console.error('Failed to handle refresh token reuse detection', e)
     }
     return null
   }
