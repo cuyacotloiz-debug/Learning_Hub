@@ -55,13 +55,13 @@ export async function verifyRefreshToken(token: string) {
   if (record.revoked) {
     try {
       // Metric and structured log for reuse detection
-      try { incrementMetric('refresh_token_reuse').catch?.(() => {}) } catch (e) {}
+      try { incrementMetric('refresh_token_reuse', 1, { reason: 'revoked_token_presented', env: process.env.NODE_ENV || 'development' }).catch?.(() => {}) } catch (e) {}
       console.warn(JSON.stringify({ event: 'refresh_reuse_detected', userId: record.userId, time: new Date().toISOString() }))
 
       const revokeAll = process.env.REFRESH_REUSE_REVOKE_ALL !== 'false'
       if (revokeAll) {
         // Metric for global revocation due to suspected refresh token reuse
-        try { incrementMetric('refresh_token_revoke_all').catch?.(() => {}) } catch (e) {}
+        try { incrementMetric('refresh_token_revoke_all', 1, { reason: 'revoked_all', env: process.env.NODE_ENV || 'development' }).catch?.(() => {}) } catch (e) {}
         await prisma.refreshToken.updateMany({ where: { userId: record.userId }, data: { revoked: true } })
         console.warn(`Revoked all refresh tokens for user ${record.userId} due to reuse detection`)
       }
