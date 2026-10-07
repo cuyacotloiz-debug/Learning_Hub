@@ -1,5 +1,6 @@
 import { ZodSchema } from 'zod'
 import { verifyToken } from './auth'
+import { incrementMetric } from './metrics'
 
 export function withValidation(schema: ZodSchema, handler: (req: any, res: any, parsed: any) => Promise<any>) {
   return async function (req: any, res: any) {
@@ -28,6 +29,24 @@ export function withAuth(handler: (req: any, res: any, payload: any) => Promise<
     } catch (err) {
       console.error('Auth wrapper error', err)
       return res.status(500).json({ error: 'Internal server error' })
+    }
+  }
+}
+
+// Centralized instrumentation wrapper. Use to wrap handlers for automatic metrics collection.
+export function withMetrics(name: string, handler: (req: any, res: any, ...args: any[]) => Promise<any>) {
+  return async function (req: any, res: any, ...args: any[]) {
+    const start = Date.now()
+    try { incrementMetric(`${name}_requests`).catch?.(() => {}) } catch {}
+    try {
+      const result = await handler(req, res, ...args)
+      try { incrementMetric(`${name}_success`).catch?.(() => {}) } catch {}
+      return result
+    } catch (err) {
+      try { incrementMetric(`${name}_error`).catch?.(() => {}) } catch {}
+      throw err
+    } finally {
+      try { incrementMetric(`${name}_latency_ms`, Date.now() - start).catch?.(() => {}) } catch {}
     }
   }
 }
