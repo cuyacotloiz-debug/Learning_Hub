@@ -10,14 +10,15 @@ export default async function handler(req, res) {
   try {
     // Rate limit login attempts per IP
     const ip = getIpKey(req)
-    const allowed = await checkRateLimit(`login:${ip}`, 20, 60 * 60 * 1000) // 20 per hour
+    const { loginIp, loginEmail } = await import('../../../lib/rateConfig').then(m => m.RATE_CONFIG)
+    const allowed = await checkRateLimit(`login:${ip}`, loginIp.limit, loginIp.windowMs)
     if (!allowed) return res.status(429).json({ error: 'Too many login attempts, try later' })
 
     const parsed = loginSchema.parse(req.body)
     const { email, password } = parsed
 
     // Per-email rate limit to reduce account-targeted brute force without exposing user IDs
-    const emailAllowed = await checkRateLimit(`login:email:${email}`, 10, 60 * 60 * 1000) // 10 per hour per email
+    const emailAllowed = await checkRateLimit(`login:email:${email}`, loginEmail.limit, loginEmail.windowMs)
     if (!emailAllowed) return res.status(429).json({ error: 'Too many login attempts for this account, try later' })
 
     const user = await prisma.user.findUnique({ where: { email } })

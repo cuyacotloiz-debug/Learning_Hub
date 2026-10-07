@@ -45,7 +45,9 @@ export async function checkRateLimit(key: string, limit = 10, windowMs = 60_000)
       if (count === 1) {
         await redis.expire(redisKey, windowSec)
       }
-      return count <= limit
+      const allowed = count <= limit
+      if (!allowed) console.warn(`Rate limit exceeded (redis): ${key}`)
+      return allowed
     } catch (e) {
       console.warn('Redis rate limit check failed, falling back to memory', e)
       // fall through to memory
@@ -58,7 +60,9 @@ export async function checkRateLimit(key: string, limit = 10, windowMs = 60_000)
   const filtered = arr.filter((t) => now - t < windowMs)
   filtered.push(now)
   store.set(key, filtered)
-  return filtered.length <= limit
+  const allowed = filtered.length <= limit
+  if (!allowed) console.warn(`Rate limit exceeded (memory): ${key}`)
+  return allowed
 }
 
 export async function resetRateLimit(key: string) {

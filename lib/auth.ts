@@ -50,7 +50,16 @@ export async function verifyRefreshToken(token: string) {
   const tokenHash = hashToken(token)
   const record = await prisma.refreshToken.findUnique({ where: { tokenHash } })
   if (!record) return null
-  if (record.revoked) return null
+  // If token is revoked, treat as possible reuse/theft: revoke all tokens for the user and return null
+  if (record.revoked) {
+    try {
+      await prisma.refreshToken.updateMany({ where: { userId: record.userId }, data: { revoked: true } })
+      console.warn(`Refresh token reuse detected for user ${record.userId} — revoking all refresh tokens`)
+    } catch (e) {
+      console.error('Failed to revoke all refresh tokens on reuse detection', e)
+    }
+    return null
+  }
   if (record.expiresAt < new Date()) return null
   const user = await prisma.user.findUnique({ where: { id: record.userId } })
   return { user, record }

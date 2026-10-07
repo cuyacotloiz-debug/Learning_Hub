@@ -8,7 +8,8 @@ export default async function handler(req, res) {
   try {
     // Rate limit logout per IP
     const ip = getIpKey(req)
-    const allowed = await checkRateLimit(`logout:${ip}`, 30, 60 * 60 * 1000) // 30 per hour
+    const { logoutIp, logoutUser } = await import('../../../lib/rateConfig').then(m => m.RATE_CONFIG)
+    const allowed = await checkRateLimit(`logout:${ip}`, logoutIp.limit, logoutIp.windowMs) // 30 per hour
     if (!allowed) return res.status(429).json({ error: 'Too many requests' })
 
     const cookies = parseCookies(req.headers.cookie)
@@ -18,7 +19,7 @@ export default async function handler(req, res) {
       try {
         const verified = await verifyRefreshToken(refreshToken)
         if (verified?.user) {
-          const userAllowed = await checkRateLimit(`logout:user:${verified.user.id}`, 30, 60 * 60 * 1000) // 30 per hour per user
+          const userAllowed = await checkRateLimit(`logout:user:${verified.user.id}`, logoutUser.limit, logoutUser.windowMs) // 30 per hour per user
           if (!userAllowed) return res.status(429).json({ error: 'Too many logout attempts for this account, try later' })
         }
       } catch (e) {

@@ -10,7 +10,8 @@ export default async function handler(req, res) {
   try {
     // Rate limit registrations per IP
     const ip = getIpKey(req)
-    const allowed = await checkRateLimit(`register:${ip}`, 5, 60 * 60 * 1000) // 5 per hour
+    const { registerIp, registerEmail } = await import('../../../lib/rateConfig').then(m => m.RATE_CONFIG)
+    const allowed = await checkRateLimit(`register:${ip}`, registerIp.limit, registerIp.windowMs) // 5 per hour
     if (!allowed) return res.status(429).json({ error: 'Too many registration attempts, try later' })
 
     const parsed = registerSchema.parse(req.body)
@@ -18,7 +19,7 @@ export default async function handler(req, res) {
     const { firstName, lastName, email, password, role } = parsed
 
     // Per-email registration rate limit to limit abuse of account creation
-    const emailAllowed = await checkRateLimit(`register:email:${email}`, 5, 60 * 60 * 1000) // 5 per hour per email
+    const emailAllowed = await checkRateLimit(`register:email:${email}`, registerEmail.limit, registerEmail.windowMs) // 5 per hour per email
     if (!emailAllowed) return res.status(429).json({ error: 'Too many registration attempts for this email, try later' })
 
     const existing = await prisma.user.findUnique({ where: { email } })
