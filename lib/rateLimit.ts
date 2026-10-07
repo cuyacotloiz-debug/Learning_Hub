@@ -50,7 +50,8 @@ export async function checkRateLimit(key: string, limit = 10, windowMs = 60_000)
       const allowed = count <= limit
       if (!allowed) {
         try {
-          incrementMetric('rate_limit_429').catch?.(() => {})
+          const route = String(key).split(':')[0]
+          incrementMetric('rate_limit_429', 1, { route, env: process.env.NODE_ENV || 'development' }).catch?.(() => {})
         } catch (e) {}
         console.warn(`Rate limit exceeded (redis): ${key}`)
       }
@@ -70,7 +71,8 @@ export async function checkRateLimit(key: string, limit = 10, windowMs = 60_000)
   const allowed = filtered.length <= limit
   if (!allowed) {
     try {
-      incrementMetric('rate_limit_429').catch?.(() => {})
+      const route = String(key).split(':')[0]
+      incrementMetric('rate_limit_429', 1, { route, env: process.env.NODE_ENV || 'development' }).catch?.(() => {})
     } catch (e) {}
     console.warn(`Rate limit exceeded (memory): ${key}`)
   }
