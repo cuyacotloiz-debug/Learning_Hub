@@ -1,10 +1,16 @@
 import { parseCookies, serializeCookie } from '../../../lib/cookies'
 import { verifyRefreshToken, rotateRefreshToken, signAccessToken } from '../../../lib/auth'
+import { getIpKey, checkRateLimit } from '../../../lib/rateLimit'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
+    // Rate limit refresh per IP
+    const ip = getIpKey(req)
+    const allowed = checkRateLimit(`refresh:${ip}`, 60, 60 * 60 * 1000) // 60 per hour
+    if (!allowed) return res.status(429).json({ error: 'Too many requests' })
+
     const cookies = parseCookies(req.headers.cookie)
     const refreshToken = cookies['refreshToken']
     if (!refreshToken) return res.status(401).json({ error: 'No refresh token' })
