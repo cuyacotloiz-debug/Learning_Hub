@@ -7,13 +7,15 @@ COPY package.json package-lock.json* ./
 RUN npm ci --omit=optional
 COPY . .
 
-# build compiled JS
+# Install all deps (including dev) to build, then compile and prune dev deps
+RUN npm ci
 RUN npx tsc -p tsconfig.json
+RUN npm prune --production
 
-# Runner stage: copy app from builder (includes compiled JS)
+# Runner stage: copy app from builder (includes compiled JS and production node_modules)
 FROM node:20-slim AS runner
 WORKDIR /app
-# Copy only compiled artifacts and node_modules
+# Copy only compiled artifacts and production node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 

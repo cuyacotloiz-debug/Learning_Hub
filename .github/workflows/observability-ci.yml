@@ -31,6 +31,21 @@ jobs:
             sleep 2
           done
 
+      - name: Pre-check: ensure no existing critical alerts
+        run: |
+          set -e
+          Q1='increase(lh_refresh_token_revoke_all[5m]) == 0'
+          Q2='increase(lh_rate_limit_429[5m]) == 0'
+          echo "Pre-check queries: $Q1 and $Q2"
+          RES1=$(curl -sS --data-urlencode "query=$Q1" http://localhost:9090/api/v1/query)
+          RES2=$(curl -sS --data-urlencode "query=$Q2" http://localhost:9090/api/v1/query)
+          echo "$RES1" | jq .
+          echo "$RES2" | jq .
+          # if either returns results, fail
+          C1=$(echo "$RES1" | jq '.data.result | length')
+          C2=$(echo "$RES2" | jq '.data.result | length')
+          if [ "$C1" -gt 0 ] || [ "$C2" -gt 0 ]; then echo "Existing alerts detected before test start"; exit 1; fi
+
       - name: Exercise endpoints
         run: |
           curl -sS http://localhost:9700/login
