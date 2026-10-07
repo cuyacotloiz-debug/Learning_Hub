@@ -60,6 +60,8 @@ export async function verifyRefreshToken(token: string) {
 
       const revokeAll = process.env.REFRESH_REUSE_REVOKE_ALL !== 'false'
       if (revokeAll) {
+        // Metric for global revocation due to suspected refresh token reuse
+        try { incrementMetric('refresh_token_revoke_all').catch?.(() => {}) } catch (e) {}
         await prisma.refreshToken.updateMany({ where: { userId: record.userId }, data: { revoked: true } })
         console.warn(`Revoked all refresh tokens for user ${record.userId} due to reuse detection`)
       }
