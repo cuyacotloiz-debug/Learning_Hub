@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import prisma from './prisma'
 import crypto from 'crypto'
-import { incrementMetric } from './metrics'
+import { incrementMetric } from './metrics.ts'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret'
 const ACCESS_TOKEN_EXPIRES_IN = '15m'

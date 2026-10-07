@@ -1,4 +1,4 @@
-import { incrementMetric } from './metrics'
+import { incrementMetric } from './metrics.ts'
 
 const store = new Map<string, number[]>()
 let redisClient: any = null
