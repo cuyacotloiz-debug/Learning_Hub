@@ -1,0 +1,31 @@
+version: '3.8'
+services:
+  observability:
+    image: node:20
+    working_dir: /app
+    volumes:
+      - ./:/app:cached
+    ports:
+      - "9700:9700"
+    command: ["bash", "-lc", "npm ci --omit=optional && NODE_ENV=development npx ts-node scripts/observability-server.ts"]
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - observability
+
+  grafana:
+    image: grafana/grafana:9.5.2
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
