@@ -1,4 +1,4 @@
-import { ZodSchema } from 'zod'
+import type { ZodSchema } from 'zod'
 import { verifyToken } from './auth.ts'
 import { incrementMetric, observeHistogram } from './metrics.ts'
 
