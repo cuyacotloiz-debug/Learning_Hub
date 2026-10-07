@@ -3,17 +3,28 @@ import { verifyToken } from '../../../lib/auth'
 import { createClassroomSchema } from '../../../lib/validations'
 import { generateClassroomId } from '../../../lib/utils'
 import { getIpKey, checkRateLimit } from '../../../lib/rateLimit'
+import { incrementMetric } from '../../../lib/metrics'
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
+    const start = Date.now()
+    try { (incrementMetric as any)('classroom_create_requests').catch?.(() => {}) } catch {}
     // Authorization: Bearer <token>
     const auth = req.headers.authorization || ''
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : null
     const payload: any = token ? verifyToken(token) : null
-    if (!payload || !payload.userId) return res.status(401).json({ error: 'Unauthorized' })
+    if (!payload || !payload.userId) {
+      try { (incrementMetric as any)('classroom_create_failure').catch?.(() => {}) } catch {}
+      try { (incrementMetric as any)('classroom_create_latency_ms', Date.now() - start).catch?.(() => {}) } catch {}
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
 
     // Only teachers may create classrooms
-    if (payload.role !== 'TEACHER') return res.status(403).json({ error: "Forbidden: teacher role required" })
+    if (payload.role !== 'TEACHER') {
+      try { (incrementMetric as any)('classroom_create_forbidden').catch?.(() => {}) } catch {}
+      try { (incrementMetric as any)('classroom_create_latency_ms', Date.now() - start).catch?.(() => {}) } catch {}
+      return res.status(403).json({ error: "Forbidden: teacher role required" })
+    }
 
     try {
       const parsed = createClassroomSchema.parse(req.body)
@@ -23,7 +34,11 @@ export default async function handler(req, res) {
       const ip = getIpKey(req)
       const { createClassroomIp } = await import('../../../lib/rateConfig').then(m => m.RATE_CONFIG)
       const allowed = await checkRateLimit(`create-classroom:${ip}`, createClassroomIp.limit, createClassroomIp.windowMs)
-      if (!allowed) return res.status(429).json({ error: 'Too many requests' })
+      if (!allowed) {
+        try { (incrementMetric as any)('classroom_create_429').catch?.(() => {}) } catch {}
+        try { (incrementMetric as any)('classroom_create_latency_ms', Date.now() - start).catch?.(() => {}) } catch {}
+        return res.status(429).json({ error: 'Too many requests' })
+      }
 
       // Attempt to create a classroom with a collision-resistant ID and retry on unique constraint
       let attempts = 0
@@ -35,6 +50,8 @@ export default async function handler(req, res) {
           const created = await prisma.classroom.create({
             data: { classroomId, name, subject, description, teacherId: payload.userId },
           })
+          try { (incrementMetric as any)('classroom_create_success').catch?.(() => {}) } catch {}
+          try { (incrementMetric as any)('classroom_create_latency_ms', Date.now() - start).catch?.(() => {}) } catch {}
           return res.status(201).json({ classroom: created })
         } catch (err) {
           // Prisma unique constraint code is P2002
