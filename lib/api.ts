@@ -1,5 +1,5 @@
 import type { ZodSchema } from 'zod'
-import { verifyToken } from './auth.ts'
+import { verifyAccessToken as verifyToken } from './auth.ts'
 import { incrementMetric, observeHistogram } from './metrics.ts'
 
 export function withValidation(schema: ZodSchema, handler: (req: any, res: any, parsed: any) => Promise<any>) {
