@@ -30,9 +30,13 @@ Grafana panels to include on a Learning Hub dashboard:
    - Query: sum by (job, route, status_code) (increase(lh_<endpoint>_status_2xx[5m]))
    - Note: withMetrics emits per-endpoint status counters (lh_<name>_status_<code>), convert these to a consistent label via Prometheus recording rules if needed.
 
-4) Latency distribution (when histogram implemented)
+4) Latency distribution (histogram)
    - Type: histogram or heatmap
-   - Query: use Prometheus histogram metrics when withMetrics is converted to use prom-client Histograms for latency.
+   - Metric: lh_<endpoint>_latency_seconds (Prometheus Histogram produced by withMetrics)
+   - Queries:
+     - p50: histogram_quantile(0.5, sum(rate(lh_<endpoint>_latency_seconds_bucket[5m])) by (le))
+     - p95: histogram_quantile(0.95, sum(rate(lh_<endpoint>_latency_seconds_bucket[5m])) by (le))
+   - Visualization: heatmap for distribution and single-stat for p50/p95 over the last 5m.
 
 Operational notes:
 - Avoid high-cardinality labels: do NOT attach user IDs, IP addresses, or long unique values as labels in Prometheus counters. Use coarse labels like "route" and "env".

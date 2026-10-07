@@ -1,6 +1,6 @@
 import { ZodSchema } from 'zod'
 import { verifyToken } from './auth'
-import { incrementMetric } from './metrics'
+import { incrementMetric, observeHistogram } from './metrics'
 
 export function withValidation(schema: ZodSchema, handler: (req: any, res: any, parsed: any) => Promise<any>) {
   return async function (req: any, res: any) {
@@ -61,7 +61,10 @@ export function withMetrics(name: string, handler: (req: any, res: any, ...args:
       } catch (e) {}
       throw err
     } finally {
-      try { incrementMetric(`${name}_latency_ms`, Date.now() - start).catch?.(() => {}) } catch {}
+      const durationMs = Date.now() - start
+      try { incrementMetric(`${name}_latency_ms`, durationMs).catch?.(() => {}) } catch {}
+      // also observe Prometheus histogram (seconds) for latency
+      try { observeHistogram(`${name}_latency_seconds`, durationMs).catch?.(() => {}) } catch {}
     }
   }
 }
