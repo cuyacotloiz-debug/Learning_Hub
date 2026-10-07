@@ -1,0 +1,47 @@
+name: Observability stack CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-test-stack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build and start observability stack
+        run: |
+          docker compose up --build -d --remove-orphans
+
+      - name: Wait for observability to be available
+        run: |
+          for i in {1..30}; do
+            if curl -sS http://localhost:9700/metrics >/dev/null 2>&1; then
+              echo "observability up"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Exercise endpoints
+        run: |
+          curl -sS http://localhost:9700/login
+          curl -sS http://localhost:9700/create || true
+          curl -sS http://localhost:9700/create || true
+          curl -sS http://localhost:9700/join
+          curl -sS http://localhost:9700/simulate-refresh
+
+      - name: Fetch metrics
+        run: curl -sS http://localhost:9700/metrics | head -n 200
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
