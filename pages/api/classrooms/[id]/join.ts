@@ -2,11 +2,11 @@ import prisma from '../../../../lib/prisma'
 import { verifyToken } from '../../../../lib/auth'
 import { z } from 'zod'
 import { getIpKey, checkRateLimit } from '../../../../lib/rateLimit'
-import { incrementMetric } from '../../../../lib/metrics'
+import { withMetrics } from '../../../../lib/api'
 
 const paramsSchema = z.object({ id: z.string().min(1) })
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   const start = Date.now()
@@ -72,8 +72,9 @@ export default async function handler(req, res) {
   } catch (err) {
     if (err?.issues) return res.status(400).json({ error: 'Invalid params', details: err.issues })
     console.error('Join classroom error', err)
-    try { (incrementMetric as any)('classroom_join_error').catch?.(() => {}) } catch {}
-    try { (incrementMetric as any)('classroom_join_latency_ms', Date.now() - start).catch?.(() => {}) } catch {}
     return res.status(500).json({ error: 'Internal server error' })
   }
 }
+
+export default withMetrics('classroom_join', handler)
+

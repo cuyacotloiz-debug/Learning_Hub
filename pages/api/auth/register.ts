@@ -3,23 +3,17 @@ import { hashPassword, signAccessToken, createRefreshToken } from '../../../lib/
 import { registerSchema } from '../../../lib/validations'
 import { getIpKey, checkRateLimit } from '../../../lib/rateLimit'
 import { serializeCookie } from '../../../lib/cookies'
-import { incrementMetric } from '../../../lib/metrics'
+import { withMetrics } from '../../../lib/api'
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
-
-  const start = Date.now()
-  try { (incrementMetric as any)('auth_register_requests').catch?.(() => {}) } catch {}
 
   try {
     // Rate limit registrations per IP
     const ip = getIpKey(req)
     const { registerIp, registerEmail } = await import('../../../lib/rateConfig').then(m => m.RATE_CONFIG)
     const allowed = await checkRateLimit(`register:${ip}`, registerIp.limit, registerIp.windowMs) // 5 per hour
-    if (!allowed) {
-      try { (incrementMetric as any)('auth_register_429').catch?.(() => {}) } catch {}
-      return res.status(429).json({ error: 'Too many registration attempts, try later' })
-    }
+    if (!allowed) return res.status(429).json({ error: 'Too many registration attempts, try later' })
 
     const parsed = registerSchema.parse(req.body)
 
@@ -27,17 +21,10 @@ export default async function handler(req, res) {
 
     // Per-email registration rate limit to limit abuse of account creation
     const emailAllowed = await checkRateLimit(`register:email:${email}`, registerEmail.limit, registerEmail.windowMs) // 5 per hour per email
-    if (!emailAllowed) {
-      try { (incrementMetric as any)('auth_register_429').catch?.(() => {}) } catch {}
-      return res.status(429).json({ error: 'Too many registration attempts for this email, try later' })
-    }
+    if (!emailAllowed) return res.status(429).json({ error: 'Too many registration attempts for this email, try later' })
 
     const existing = await prisma.user.findUnique({ where: { email } })
-    if (existing) {
-      try { (incrementMetric as any)('auth_register_conflict').catch?.(() => {}) } catch {}
-      try { (incrementMetric as any)('auth_register_latency_ms', Date.now() - start).catch?.(() => {}) } catch {}
-      return res.status(409).json({ error: 'Email already in use' })
-    }
+    if (existing) return res.status(409).json({ error: 'Email already in use' })
 
     const passwordHash = await hashPassword(password)
     const user = await prisma.user.create({
@@ -51,16 +38,14 @@ export default async function handler(req, res) {
     const cookie = serializeCookie('refreshToken', refreshToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge })
     res.setHeader('Set-Cookie', cookie)
 
-    try { (incrementMetric as any)('auth_register_success').catch?.(() => {}) } catch {}
-    try { (incrementMetric as any)('auth_register_latency_ms', Date.now() - start).catch?.(() => {}) } catch {}
     return res.status(201).json({ user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role }, accessToken })
   } catch (err) {
     console.error('Register error', err)
-    try { (incrementMetric as any)('auth_register_error').catch?.(() => {}) } catch {}
-    try { (incrementMetric as any)('auth_register_latency_ms', Date.now() - start).catch?.(() => {}) } catch {}
     if (err?.issues) {
       return res.status(400).json({ error: 'Validation failed', details: err.issues })
     }
     return res.status(500).json({ error: 'Internal server error' })
   }
 }
+
+export default withMetrics('auth_register', handler)

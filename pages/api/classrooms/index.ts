@@ -3,9 +3,9 @@ import { verifyToken } from '../../../lib/auth'
 import { createClassroomSchema } from '../../../lib/validations'
 import { generateClassroomId } from '../../../lib/utils'
 import { getIpKey, checkRateLimit } from '../../../lib/rateLimit'
-import { incrementMetric } from '../../../lib/metrics'
+import { withMetrics } from '../../../lib/api'
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method === 'POST') {
     const start = Date.now()
     try { (incrementMetric as any)('classroom_create_requests').catch?.(() => {}) } catch {}
@@ -97,3 +97,5 @@ export default async function handler(req, res) {
 
   return res.status(405).json({ error: 'Method not allowed' })
 }
+
+export default withMetrics('classroom_create', handler)
