@@ -32,10 +32,13 @@ Grafana panels to include on a Learning Hub dashboard:
 
 4) Latency distribution (histogram)
    - Type: histogram or heatmap
-   - Metric: lh_<endpoint>_latency_seconds (Prometheus Histogram produced by withMetrics)
-   - Queries:
-     - p50: histogram_quantile(0.5, sum(rate(lh_<endpoint>_latency_seconds_bucket[5m])) by (le))
-     - p95: histogram_quantile(0.95, sum(rate(lh_<endpoint>_latency_seconds_bucket[5m])) by (le))
+   - Metric: lh_<endpoint>_latency_seconds (Prometheus Histogram produced by observeHistogram)
+   - Queries (global):
+     - p50: histogram_quantile(0.5, sum(rate({__name__=~"lh_.*_latency_seconds_bucket"}[5m])) by (le))
+     - p95: histogram_quantile(0.95, sum(rate({__name__=~"lh_.*_latency_seconds_bucket"}[5m])) by (le))
+   - Queries (per-route, using shared handler histogram lh_handler_latency_seconds):
+     - p50 for route: histogram_quantile(0.5, sum by (route, le) (rate(lh_handler_latency_seconds_bucket[5m])))
+     - p95 for route: histogram_quantile(0.95, sum by (route, le) (rate(lh_handler_latency_seconds_bucket[5m])))
    - Visualization: heatmap for distribution and single-stat for p50/p95 over the last 5m.
 
 Operational notes:

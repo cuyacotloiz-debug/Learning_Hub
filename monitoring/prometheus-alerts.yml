@@ -45,3 +45,12 @@ groups:
         annotations:
           summary: "High p95 latency across instrumented endpoints"
           description: "The 95th percentile latency across instrumented endpoints exceeds 1s over the last 5 minutes. Consider investigating slow endpoints or increases in load."
+
+      - alert: HighP95LatencyPerRoute
+        expr: histogram_quantile(0.95, sum by (route, le) (rate(lh_handler_latency_seconds_bucket[5m]))) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p95 latency for route {{ $labels.route }}"
+          description: "The 95th percentile latency for route {{ $labels.route }} exceeds 1s over the last 5 minutes."

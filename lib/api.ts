@@ -63,8 +63,8 @@ export function withMetrics(name: string, handler: (req: any, res: any, ...args:
     } finally {
       const durationMs = Date.now() - start
       try { incrementMetric(`${name}_latency_ms`, durationMs).catch?.(() => {}) } catch {}
-      // also observe Prometheus histogram (seconds) for latency
-      try { observeHistogram(`${name}_latency_seconds`, durationMs).catch?.(() => {}) } catch {}
+      // observe a shared handler latency histogram with route label for per-endpoint percentiles
+      try { observeHistogram('handler_latency_seconds', durationMs, { route: name, env: process.env.NODE_ENV || 'development' }).catch?.(() => {}) } catch {}
     }
   }
 }

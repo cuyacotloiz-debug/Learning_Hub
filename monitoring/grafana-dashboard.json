@@ -99,7 +99,20 @@
   "schemaVersion": 30,
   "style": "dark",
   "tags": ["learning-hub", "observability"],
-  "templating": {"list": []},
+  "templating": {"list": [
+    {
+      "name": "route",
+      "type": "query",
+      "datasource": null,
+      "query": "label_values(lh_handler_latency_seconds_bucket, route)",
+      "refresh": 2,
+      "hide": 0,
+      "multi": false,
+      "includeAll": false,
+      "allValue": null,
+      "options": []
+    }
+  ]},
   "time": {"from": "now-1h", "to": "now"},
   "timepicker": {},
   "timezone": "browser",
