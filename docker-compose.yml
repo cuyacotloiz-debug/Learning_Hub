@@ -9,7 +9,12 @@ services:
       - "9700:9700"
     environment:
       - NODE_ENV=development
-    command: ["npx", "ts-node", "scripts/observability-server.ts"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9700/metrics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: ["node", "dist/scripts/observability-server.js"]
 
   prometheus:
     image: prom/prometheus:latest

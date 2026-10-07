@@ -42,6 +42,31 @@ jobs:
       - name: Fetch metrics
         run: curl -sS http://localhost:9700/metrics | head -n 200
 
+      - name: Install jq for Prometheus queries
+        run: sudo apt-get update && sudo apt-get install -y jq || true
+
+      - name: Check AnyRefreshTokenRevokeAll fired (should be > 0 after simulation)
+        run: |
+          set -e
+          Q='increase(lh_refresh_token_revoke_all[5m]) > 0'
+          echo "Query: $Q"
+          sleep 5
+          RES=$(curl -sS --data-urlencode "query=$Q" http://localhost:9090/api/v1/query)
+          echo "$RES" | jq .
+          COUNT=$(echo "$RES" | jq '.data.result | length')
+          if [ "$COUNT" -lt 1 ]; then echo "Expected AnyRefreshTokenRevokeAll to be active"; exit 1; fi
+
+      - name: Check RateLimit for create-test (should be > 0)
+        run: |
+          set -e
+          Q='increase(lh_rate_limit_429{route="create-test"}[5m]) > 0'
+          echo "Query: $Q"
+          sleep 2
+          RES=$(curl -sS --data-urlencode "query=$Q" http://localhost:9090/api/v1/query)
+          echo "$RES" | jq .
+          COUNT=$(echo "$RES" | jq '.data.result | length')
+          if [ "$COUNT" -lt 1 ]; then echo "Expected rate limit hit for create-test"; exit 1; fi
+
       - name: Tear down
         if: always()
         run: docker compose down -v

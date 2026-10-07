@@ -7,13 +7,17 @@ COPY package.json package-lock.json* ./
 RUN npm ci --omit=optional
 COPY . .
 
-# Runner stage: copy app from builder (uses the installed node_modules)
+# build compiled JS
+RUN npx tsc -p tsconfig.json
+
+# Runner stage: copy app from builder (includes compiled JS)
 FROM node:20-slim AS runner
 WORKDIR /app
-# Copy everything from builder (including node_modules)
-COPY --from=builder /app /app
+# Copy only compiled artifacts and node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
 
-ENV NODE_ENV=development
+ENV NODE_ENV=production
 EXPOSE 9700
-# Run the server with ts-node (dev-friendly). For production, consider compiling to JS and using a smaller runtime image.
-CMD ["npx", "ts-node", "scripts/observability-server.ts"]
+# Run the compiled JS
+CMD ["node", "dist/scripts/observability-server.js"]
