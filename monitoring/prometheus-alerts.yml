@@ -1,0 +1,38 @@
+groups:
+  - name: learning_hub_alerts
+    rules:
+      - alert: HighRateLimit429
+        expr: sum by (route) (increase(lh_rate_limit_429[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High rate limit (429) count for {{ $labels.route }}"
+          description: "More than 10 rate-limit hits in 5m for route {{ $labels.route }}. Investigate potential abuse or misconfiguration."
+
+      - alert: ExcessiveRefreshTokenReuse
+        expr: increase(lh_refresh_token_reuse[5m]) > 5
+        for: 2m
+        labels:
+          severity: high
+        annotations:
+          summary: "Multiple refresh token reuse events detected"
+          description: "Detected >5 refresh token reuse events in 5 minutes. This may indicate stolen refresh tokens or automated abuse."
+
+      - alert: AnyRefreshTokenRevokeAll
+        expr: increase(lh_refresh_token_revoke_all[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Global refresh-token revocation observed"
+          description: "At least one global refresh-token revocation occurred in the last 5 minutes. Investigate immediately: possible token leak or replay attack."
+
+      - alert: RateLimitSpikeByEnv
+        expr: sum by (env) (increase(lh_rate_limit_429[5m])) > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Rate limit spikes in environment {{ $labels.env }}"
+          description: "More than 100 rate-limit hits in 5 minutes in environment {{ $labels.env }}."
