@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   try {
     // Rate limit login attempts per IP
     const ip = getIpKey(req)
-    const allowed = checkRateLimit(`login:${ip}`, 20, 60 * 60 * 1000) // 20 per hour
+    const allowed = await checkRateLimit(`login:${ip}`, 20, 60 * 60 * 1000) // 20 per hour
     if (!allowed) return res.status(429).json({ error: 'Too many login attempts, try later' })
 
     const parsed = loginSchema.parse(req.body)

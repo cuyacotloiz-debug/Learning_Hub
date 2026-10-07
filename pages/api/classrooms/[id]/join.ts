@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
   // Rate limit joins per IP
   const ip = getIpKey(req)
-  const allowed = checkRateLimit(`join-classroom:${ip}`, 30, 60_000)
+  const allowed = await checkRateLimit(`join-classroom:${ip}`, 30, 60_000)
   if (!allowed) return res.status(429).json({ error: 'Too many requests' })
 
   // Validate path param

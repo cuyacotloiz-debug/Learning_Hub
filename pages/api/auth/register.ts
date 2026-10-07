@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   try {
     // Rate limit registrations per IP
     const ip = getIpKey(req)
-    const allowed = checkRateLimit(`register:${ip}`, 5, 60 * 60 * 1000) // 5 per hour
+    const allowed = await checkRateLimit(`register:${ip}`, 5, 60 * 60 * 1000) // 5 per hour
     if (!allowed) return res.status(429).json({ error: 'Too many registration attempts, try later' })
 
     const parsed = registerSchema.parse(req.body)

@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   try {
     // Rate limit refresh per IP
     const ip = getIpKey(req)
-    const allowed = checkRateLimit(`refresh:${ip}`, 60, 60 * 60 * 1000) // 60 per hour
+    const allowed = await checkRateLimit(`refresh:${ip}`, 60, 60 * 60 * 1000) // 60 per hour
     if (!allowed) return res.status(429).json({ error: 'Too many requests' })
 
     const cookies = parseCookies(req.headers.cookie)

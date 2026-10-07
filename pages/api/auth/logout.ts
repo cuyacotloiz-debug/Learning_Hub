@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   try {
     // Rate limit logout per IP
     const ip = getIpKey(req)
-    const allowed = checkRateLimit(`logout:${ip}`, 30, 60 * 60 * 1000) // 30 per hour
+    const allowed = await checkRateLimit(`logout:${ip}`, 30, 60 * 60 * 1000) // 30 per hour
     if (!allowed) return res.status(429).json({ error: 'Too many requests' })
 
     const cookies = parseCookies(req.headers.cookie)

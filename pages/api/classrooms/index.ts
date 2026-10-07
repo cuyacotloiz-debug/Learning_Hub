@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
       // Rate limit classroom creation per IP
       const ip = getIpKey(req)
-      const allowed = checkRateLimit(`create-classroom:${ip}`, 10, 60_000)
+      const allowed = await checkRateLimit(`create-classroom:${ip}`, 10, 60_000)
       if (!allowed) return res.status(429).json({ error: 'Too many requests' })
 
       // Attempt to create a classroom with a collision-resistant ID and retry on unique constraint
