@@ -1,0 +1,109 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "#000000",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Learning Hub observability dashboard (rate limits, refresh security, status, latency)",
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "iteration": 162739,
+  "links": [],
+  "panels": [
+    {
+      "datasource": null,
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "id": 1,
+      "options": {},
+      "targets": [
+        {
+          "expr": "sum by(route) (increase(lh_rate_limit_429[5m]))",
+          "format": "time_series",
+          "legendFormat": "{{route}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Rate Limit (429) by route (5m)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 8},
+      "id": 2,
+      "options": {},
+      "targets": [
+        {
+          "expr": "increase(lh_refresh_token_reuse[5m])",
+          "format": "time_series",
+          "legendFormat": "reuse",
+          "refId": "A"
+        }
+      ],
+      "title": "Refresh Token Reuse (5m)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 8},
+      "id": 3,
+      "options": {},
+      "targets": [
+        {
+          "expr": "increase(lh_refresh_token_revoke_all[5m])",
+          "format": "time_series",
+          "legendFormat": "revoke_all",
+          "refId": "A"
+        }
+      ],
+      "title": "Refresh Token Revoke-All Events (5m)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": null,
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 14},
+      "id": 4,
+      "options": {},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate({__name__=~\"lh_.*_latency_seconds_bucket\"}[5m])))",
+          "format": "time_series",
+          "legendFormat": "p95",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.5, sum by (le) (rate({__name__=~\"lh_.*_latency_seconds_bucket\"}[5m])))",
+          "format": "time_series",
+          "legendFormat": "p50",
+          "refId": "B"
+        }
+      ],
+      "title": "Latency (p50/p95) across instrumented endpoints",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 30,
+  "style": "dark",
+  "tags": ["learning-hub", "observability"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Learning Hub Observability",
+  "uid": "learning-hub-observability",
+  "version": 1
+}
