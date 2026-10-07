@@ -17,6 +17,10 @@ export default async function handler(req, res) {
 
     const { firstName, lastName, email, password, role } = parsed
 
+    // Per-email registration rate limit to limit abuse of account creation
+    const emailAllowed = await checkRateLimit(`register:email:${email}`, 5, 60 * 60 * 1000) // 5 per hour per email
+    if (!emailAllowed) return res.status(429).json({ error: 'Too many registration attempts for this email, try later' })
+
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) return res.status(409).json({ error: 'Email already in use' })
 

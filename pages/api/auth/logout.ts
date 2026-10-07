@@ -14,6 +14,17 @@ export default async function handler(req, res) {
     const cookies = parseCookies(req.headers.cookie)
     const refreshToken = cookies['refreshToken']
     if (refreshToken) {
+      // Try to verify to get user id for per-user rate limiting; if verification fails, proceed with IP-only check
+      try {
+        const verified = await verifyRefreshToken(refreshToken)
+        if (verified?.user) {
+          const userAllowed = await checkRateLimit(`logout:user:${verified.user.id}`, 30, 60 * 60 * 1000) // 30 per hour per user
+          if (!userAllowed) return res.status(429).json({ error: 'Too many logout attempts for this account, try later' })
+        }
+      } catch (e) {
+        // ignore verification errors and continue to revoke
+      }
+
       await revokeRefreshToken(refreshToken)
     }
     // clear cookie

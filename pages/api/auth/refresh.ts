@@ -19,6 +19,11 @@ export default async function handler(req, res) {
     if (!verified) return res.status(401).json({ error: 'Invalid or expired refresh token' })
 
     const { user } = verified
+
+    // Per-user refresh rate limit to limit token-exchange flooding
+    const userAllowed = await checkRateLimit(`refresh:user:${user.id}`, 100, 60 * 60 * 1000) // 100 per hour per user
+    if (!userAllowed) return res.status(429).json({ error: 'Too many token refreshes for this account, try later' })
+
     // rotate refresh token
     const { token: newRefreshToken, expiresAt } = await rotateRefreshToken(refreshToken, user.id)
     const maxAge = Math.floor((expiresAt.getTime() - Date.now()) / 1000)

@@ -16,6 +16,10 @@ export default async function handler(req, res) {
     const parsed = loginSchema.parse(req.body)
     const { email, password } = parsed
 
+    // Per-email rate limit to reduce account-targeted brute force without exposing user IDs
+    const emailAllowed = await checkRateLimit(`login:email:${email}`, 10, 60 * 60 * 1000) // 10 per hour per email
+    if (!emailAllowed) return res.status(429).json({ error: 'Too many login attempts for this account, try later' })
+
     const user = await prisma.user.findUnique({ where: { email } })
     if (!user) return res.status(401).json({ error: 'Invalid credentials' })
 
