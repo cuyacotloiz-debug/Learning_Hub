@@ -1,13 +1,15 @@
 version: '3.8'
 services:
   observability:
-    image: node:20
+    build:
+      context: .
+      dockerfile: Dockerfile
     working_dir: /app
-    volumes:
-      - ./:/app:cached
     ports:
       - "9700:9700"
-    command: ["bash", "-lc", "npm ci --omit=optional && NODE_ENV=development npx ts-node scripts/observability-server.ts"]
+    environment:
+      - NODE_ENV=development
+    command: ["npx", "ts-node", "scripts/observability-server.ts"]
 
   prometheus:
     image: prom/prometheus:latest
