@@ -15,7 +15,9 @@ async function initPromClient() {
   }
 }
 
-export async function incrementMetric(key: string, by = 1) {
+// incrementMetric now accepts optional labels for Prometheus counters.
+// Usage: incrementMetric('rate_limit_429', 1, { route: '/api/login' })
+export async function incrementMetric(key: string, by = 1, labels?: Record<string, string>) {
   const cur = counters.get(key) || 0
   counters.set(key, cur + by)
 
@@ -24,10 +26,15 @@ export async function incrementMetric(key: string, by = 1) {
     try {
       let c = promCounters.get(key)
       if (!c) {
-        c = new p.Counter({ name: `lh_${key}`, help: key })
+        const labelNames = labels ? Object.keys(labels) : []
+        c = new p.Counter({ name: `lh_${key}`, help: key, labelNames })
         promCounters.set(key, c)
       }
-      c.inc(by)
+      if (labels && Object.keys(labels).length > 0) {
+        c.inc(labels, by)
+      } else {
+        c.inc(by)
+      }
     } catch (e) {
       // ignore prom errors
     }
