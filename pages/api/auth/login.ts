@@ -34,7 +34,17 @@ async function handler(req, res) {
     const { token: refreshToken, expiresAt } = await createRefreshToken(user.id)
     const maxAge = Math.floor((expiresAt.getTime() - Date.now()) / 1000)
     const cookie = serializeCookie('refreshToken', refreshToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge })
-    res.setHeader('Set-Cookie', cookie)
+
+    // Create a CSRF token for double-submit cookie pattern and set it as a non-HttpOnly cookie
+    try {
+      const { createCsrfToken } = await import('../../../lib/csrf')
+      const csrf = createCsrfToken()
+      const csrfCookie = serializeCookie('csrfToken', csrf, { httpOnly: false, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge })
+      res.setHeader('Set-Cookie', [cookie, csrfCookie])
+    } catch (e) {
+      // fallback to setting only refresh cookie if csrf helper fails
+      res.setHeader('Set-Cookie', cookie)
+    }
 
     return res.status(200).json({ user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role }, accessToken })
   } catch (err) {

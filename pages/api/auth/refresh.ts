@@ -13,6 +13,15 @@ async function handler(req, res) {
     const allowed = await checkRateLimit(`refresh:${ip}`, refreshIp.limit, refreshIp.windowMs) // 60 per hour
     if (!allowed) return res.status(429).json({ error: 'Too many requests' })
 
+    // CSRF double-submit verification
+    try {
+      const { verifyDoubleSubmit } = await import('../../../lib/csrf')
+      if (!verifyDoubleSubmit(req)) return res.status(403).json({ error: 'CSRF verification failed' })
+    } catch (e) {
+      // If CSRF helper is unavailable, continue but log a warning
+      console.warn('CSRF verification helper unavailable, skipping CSRF check')
+    }
+
     const cookies = parseCookies(req.headers.cookie)
     const refreshToken = cookies['refreshToken']
     if (!refreshToken) return res.status(401).json({ error: 'No refresh token' })
