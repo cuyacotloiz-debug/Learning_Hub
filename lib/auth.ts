@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import prisma from './prisma'
 import crypto from 'crypto'
+import { incrementMetric } from './metrics'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret'
 const ACCESS_TOKEN_EXPIRES_IN = '15m'
@@ -54,7 +55,7 @@ export async function verifyRefreshToken(token: string) {
   if (record.revoked) {
     try {
       // Metric and structured log for reuse detection
-      try { (await import('./metrics')).incrementMetric('refresh_token_reuse') } catch (e) {}
+      try { incrementMetric('refresh_token_reuse').catch?.(() => {}) } catch (e) {}
       console.warn(JSON.stringify({ event: 'refresh_reuse_detected', userId: record.userId, time: new Date().toISOString() }))
 
       const revokeAll = process.env.REFRESH_REUSE_REVOKE_ALL !== 'false'
