@@ -1,3 +1,5 @@
+import { incrementMetric } from './metrics'
+
 const store = new Map<string, number[]>()
 let redisClient: any = null
 let redisInitializing = false
@@ -48,7 +50,7 @@ export async function checkRateLimit(key: string, limit = 10, windowMs = 60_000)
       const allowed = count <= limit
       if (!allowed) {
         try {
-          (await import('./metrics')).incrementMetric('rate_limit_429')
+          incrementMetric('rate_limit_429').catch?.(() => {})
         } catch (e) {}
         console.warn(`Rate limit exceeded (redis): ${key}`)
       }
@@ -68,7 +70,7 @@ export async function checkRateLimit(key: string, limit = 10, windowMs = 60_000)
   const allowed = filtered.length <= limit
   if (!allowed) {
     try {
-      (await import('./metrics')).incrementMetric('rate_limit_429')
+      incrementMetric('rate_limit_429').catch?.(() => {})
     } catch (e) {}
     console.warn(`Rate limit exceeded (memory): ${key}`)
   }
