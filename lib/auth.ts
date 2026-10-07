@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import prisma from './prisma'
+import prisma from './prisma.ts'
 import crypto from 'crypto'
 import { incrementMetric } from './metrics.ts'
 
