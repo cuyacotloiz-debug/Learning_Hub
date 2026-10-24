@@ -1,7 +1,7 @@
 import 'ts-node/register'
-import { withMetrics } from '../lib/api'
-import { incrementMetric, getMetrics, getPromMetrics } from '../lib/metrics'
-import { checkRateLimit } from '../lib/rateLimit'
+import { withMetrics } from '../lib/api.ts'
+import { incrementMetric, getMetrics, getPromMetrics } from '../lib/metrics.ts'
+import { checkRateLimit } from '../lib/rateLimit.ts'
 
 function makeReq(method = 'GET', headers = {}) {
   return { method, headers }

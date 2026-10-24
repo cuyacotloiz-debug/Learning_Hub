@@ -1,12 +1,12 @@
 import prisma from '../../../../lib/prisma'
-import { verifyToken } from '../../../../lib/auth'
+import { verifyAccessToken as verifyToken } from '../../../../lib/auth'
 import { z } from 'zod'
 import { getIpKey, checkRateLimit } from '../../../../lib/rateLimit'
 import { withMetrics } from '../../../../lib/api'
 
 const paramsSchema = z.object({ id: z.string().min(1) })
 
-async function handler(req, res) {
+async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
 
@@ -49,13 +49,13 @@ async function handler(req, res) {
         },
       })
       return res.status(201).json({ enrollment })
-    } catch (err) {
+    } catch (err: any) {
       // Prisma unique constraint code is P2002
       const message = (err && err.code === 'P2002') ? 'Already enrolled' : 'Could not join classroom'
       const status = (err && err.code === 'P2002') ? 409 : 500
       return res.status(status).json({ error: message })
     }
-  } catch (err) {
+  } catch (err: any) {
     if (err?.issues) return res.status(400).json({ error: 'Invalid params', details: err.issues })
     console.error('Join classroom error', err)
     return res.status(500).json({ error: 'Internal server error' })

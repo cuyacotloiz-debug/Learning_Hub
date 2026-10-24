@@ -1,11 +1,11 @@
 import prisma from '../../../lib/prisma'
-import { verifyToken } from '../../../lib/auth'
+import { verifyAccessToken as verifyToken } from '../../../lib/auth'
 import { createClassroomSchema } from '../../../lib/validations'
 import { generateClassroomId } from '../../../lib/utils'
 import { getIpKey, checkRateLimit } from '../../../lib/rateLimit'
 import { withMetrics } from '../../../lib/api'
 
-async function handler(req, res) {
+async function handler(req: any, res: any) {
   if (req.method === 'POST') {
     // Authorization: Bearer <token>
     const auth = req.headers.authorization || ''
@@ -43,7 +43,7 @@ async function handler(req, res) {
             data: { classroomId, name, subject, description, teacherId: payload.userId },
           })
           return res.status(201).json({ classroom: created })
-        } catch (err) {
+        } catch (err: any) {
           // Prisma unique constraint code is P2002
           if (err && err.code === 'P2002') {
             // collision, retry
@@ -57,7 +57,7 @@ async function handler(req, res) {
         }
       }
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Create classroom error', err)
       if (err?.issues) return res.status(400).json({ error: 'Validation failed', details: err.issues })
       // handle unique constraint collision by returning a 409

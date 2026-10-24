@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": false,
@@ -11,6 +11,6 @@
     "rootDir": ".",
     "resolveJsonModule": true
   },
-  "include": ["scripts/**/*.ts", "lib/**/*.ts"],
+  "include": ["scripts/**/*.ts", "lib/**/*.ts", "pages/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
