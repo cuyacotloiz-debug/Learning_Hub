@@ -72,8 +72,37 @@ async function handler(req: any, res: any) {
       const token = auth.startsWith('Bearer ') ? auth.slice(7) : null
       const payload: any = token ? verifyToken(token) : null
       if (payload && payload.userId && payload.role === 'TEACHER') {
-        const classrooms = await prisma.classroom.findMany({ where: { teacherId: payload.userId } })
-        return res.status(200).json({ classrooms })
+        const classrooms = await prisma.classroom.findMany({
+          where: { teacherId: payload.userId },
+          include: {
+            enrollments: {
+              include: { student: { select: { id: true, firstName: true, lastName: true, email: true } } },
+            },
+            messages: { orderBy: { createdAt: 'desc' } },
+          },
+        })
+        return res.status(200).json({
+          classrooms: classrooms.map((room) => ({
+            ...room,
+            students: room.enrollments.map((row) => ({ ...row.student, joinedAt: row.joinedAt })),
+            enrollmentCount: room.enrollments.length,
+          })),
+        })
+      }
+
+      if (payload && payload.userId && payload.role === 'STUDENT') {
+        const enrollments = await prisma.enrollment.findMany({
+          where: { studentId: payload.userId },
+          include: {
+            classroom: { include: { messages: { orderBy: { createdAt: 'desc' } } } },
+          },
+        })
+        const publicRooms = await prisma.classroom.findMany({ where: { status: 'ACTIVE' }, take: 20 })
+        const byId = new Map(publicRooms.map((room) => [room.id, { ...room, enrolled: false, messages: [] }]))
+        for (const row of enrollments) {
+          byId.set(row.classroom.id, { ...row.classroom, enrolled: true })
+        }
+        return res.status(200).json({ classrooms: [...byId.values()] })
       }
 
       // Public: list active classrooms (limited)

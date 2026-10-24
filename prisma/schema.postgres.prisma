@@ -46,8 +46,18 @@ model Classroom {
   teacherId   String
   teacher     User            @relation("TeacherClassrooms", fields: [teacherId], references: [id])
   enrollments Enrollment[]
+  messages    ClassroomMessage[]
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+}
+
+model ClassroomMessage {
+  id          String    @id @default(cuid())
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id])
+  body        String
+  meetingUrl  String?
+  createdAt   DateTime  @default(now())
 }
 
 model Enrollment {

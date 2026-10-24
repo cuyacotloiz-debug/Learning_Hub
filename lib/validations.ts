@@ -24,3 +24,8 @@ export const joinClassroomSchema = z.object({
   // but allow future options (e.g., joinCode)
   // keep minimal for now
 })
+
+export const classroomMessageSchema = z.object({
+  body: z.string().min(1),
+  meetingUrl: z.string().url().optional().or(z.literal('')),
+})

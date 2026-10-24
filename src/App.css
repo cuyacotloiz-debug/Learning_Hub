@@ -259,6 +259,57 @@ button[type='submit']:disabled {
   gap: 14px;
 }
 
+.cards-wide {
+  grid-template-columns: 1fr;
+}
+
+.room-card {
+  gap: 10px;
+}
+
+.room-block {
+  display: grid;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.room-block h4 {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.roster,
+.message-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.roster li,
+.message-list li {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.message-list a {
+  color: var(--accent);
+  font-weight: 600;
+  width: fit-content;
+}
+
+.form.compact {
+  margin-top: 4px;
+}
+
 .card {
   padding: 18px;
   display: grid;

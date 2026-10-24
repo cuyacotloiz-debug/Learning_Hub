@@ -10,4 +10,5 @@ export const RATE_CONFIG = {
   logoutUser: { limit: Number(process.env.RATE_LOGOUT_USER_LIMIT ?? 30), windowMs: Number(process.env.RATE_LOGOUT_USER_WINDOW_MS ?? 60 * 60 * 1000) },
   createClassroomIp: { limit: Number(process.env.RATE_CREATE_CLASSROOM_IP_LIMIT ?? 10), windowMs: Number(process.env.RATE_CREATE_CLASSROOM_IP_WINDOW_MS ?? 60_000) },
   joinClassroomIp: { limit: Number(process.env.RATE_JOIN_CLASSROOM_IP_LIMIT ?? 30), windowMs: Number(process.env.RATE_JOIN_CLASSROOM_IP_WINDOW_MS ?? 60_000) },
+  classroomMessageIp: { limit: Number(process.env.RATE_CLASSROOM_MESSAGE_IP_LIMIT ?? 30), windowMs: Number(process.env.RATE_CLASSROOM_MESSAGE_IP_WINDOW_MS ?? 60_000) },
 }

@@ -16,6 +16,127 @@ const emptyClassroom = {
   description: '',
 }
 
+function formatWhen(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleString()
+}
+
+function MessageList({ messages }) {
+  if (!messages?.length) return <p className="empty">No class messages yet.</p>
+  return (
+    <ul className="message-list">
+      {messages.map((item) => (
+        <li key={item.id}>
+          <p>{item.body}</p>
+          {item.meetingUrl ? (
+            <a href={item.meetingUrl} target="_blank" rel="noreferrer">
+              Join online class
+            </a>
+          ) : null}
+          {item.createdAt ? <span className="fine">{formatWhen(item.createdAt)}</span> : null}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function TeacherRoomCard({ room, busy, onPostMessage }) {
+  const [draft, setDraft] = useState({ body: '', meetingUrl: '' })
+  const students = room.students || []
+
+  async function submit(event) {
+    event.preventDefault()
+    try {
+      await onPostMessage(room, draft)
+      setDraft({ body: '', meetingUrl: '' })
+    } catch {
+      // banner already set
+    }
+  }
+
+  return (
+    <li className="card room-card">
+      <div className="card-top">
+        <span className="code">{room.classroomId}</span>
+        <span className="pill">{room.enrollmentCount || students.length} enrolled</span>
+      </div>
+      <h3>{room.name}</h3>
+      <p className="subject">{room.subject}</p>
+      {room.description ? <p>{room.description}</p> : null}
+
+      <div className="room-block">
+        <h4>Enrolled students</h4>
+        {students.length === 0 ? (
+          <p className="empty">No students have joined this subject yet.</p>
+        ) : (
+          <ul className="roster">
+            {students.map((student) => (
+              <li key={student.id}>
+                <strong>
+                  {student.firstName} {student.lastName}
+                </strong>
+                <span className="fine">{student.email}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="room-block">
+        <h4>Class messages</h4>
+        <MessageList messages={room.messages} />
+        <form className="form compact" onSubmit={submit}>
+          <label>
+            Message
+            <textarea
+              required
+              rows={3}
+              placeholder="Join tonight’s session, bring chapter 4, etc."
+              value={draft.body}
+              onChange={(event) => setDraft({ ...draft, body: event.target.value })}
+            />
+          </label>
+          <label>
+            Online class link (optional)
+            <input
+              type="url"
+              placeholder="https://meet.google.com/..."
+              value={draft.meetingUrl}
+              onChange={(event) => setDraft({ ...draft, meetingUrl: event.target.value })}
+            />
+          </label>
+          <button type="submit" disabled={busy}>
+            {busy ? 'Posting…' : 'Post message'}
+          </button>
+        </form>
+      </div>
+    </li>
+  )
+}
+
+function StudentRoomCard({ room }) {
+  return (
+    <li className="card room-card">
+      <div className="card-top">
+        <span className="code">{room.classroomId}</span>
+        {room.enrolled && <span className="pill">enrolled</span>}
+      </div>
+      <h3>{room.name}</h3>
+      <p className="subject">{room.subject}</p>
+      {room.description ? <p>{room.description}</p> : null}
+      {room.teacherName ? <p className="fine">Taught by {room.teacherName}</p> : null}
+      {room.enrolled ? (
+        <div className="room-block">
+          <h4>Class messages</h4>
+          <MessageList messages={room.messages} />
+        </div>
+      ) : null}
+    </li>
+  )
+}
+
 function App() {
   const [user, setUser] = useState(() => getStoredUser())
   const [mode, setMode] = useState('login')
@@ -89,6 +210,24 @@ function App() {
       flash('ok', `Classroom created: ${data.classroom.classroomId}`)
     } catch (err) {
       flash('error', err.message || 'Could not create classroom')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handlePostMessage(room, draft) {
+    setBusy(true)
+    flash('', '')
+    try {
+      await api.postMessage(room.classroomId, {
+        body: draft.body,
+        meetingUrl: draft.meetingUrl,
+      })
+      await refreshClassrooms()
+      flash('ok', `Message posted to ${room.name}.`)
+    } catch (err) {
+      flash('error', err.message || 'Could not post message')
+      throw err
     } finally {
       setBusy(false)
     }
@@ -334,21 +473,19 @@ function App() {
             {classrooms.length === 0 ? (
               <p className="empty">No classrooms yet.</p>
             ) : (
-              <ul className="cards">
-                {classrooms.map((room) => (
-                  <li key={room.id || room.classroomId} className="card">
-                    <div className="card-top">
-                      <span className="code">{room.classroomId}</span>
-                      {room.enrolled && <span className="pill">enrolled</span>}
-                    </div>
-                    <h3>{room.name}</h3>
-                    <p className="subject">{room.subject}</p>
-                    {room.description && <p>{room.description}</p>}
-                    {room.teacherName && (
-                      <p className="fine">Taught by {room.teacherName}</p>
-                    )}
-                  </li>
-                ))}
+              <ul className={`cards ${user.role === 'TEACHER' ? 'cards-wide' : ''}`}>
+                {classrooms.map((room) =>
+                  user.role === 'TEACHER' ? (
+                    <TeacherRoomCard
+                      key={room.id || room.classroomId}
+                      room={room}
+                      busy={busy}
+                      onPostMessage={handlePostMessage}
+                    />
+                  ) : (
+                    <StudentRoomCard key={room.id || room.classroomId} room={room} />
+                  ),
+                )}
               </ul>
             )}
           </section>

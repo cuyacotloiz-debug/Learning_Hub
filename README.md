@@ -1,6 +1,6 @@
 # Learning HuB
 
-Classroom workspace for teachers and students. Teachers create rooms with a join code. Students enroll with that code.
+Classroom workspace for teachers and students. Teachers create rooms with a join code, see who enrolled in each subject, and post class messages or online-meeting links. Students enroll with that code and read those messages.
 
 - Frontend: React + Vite ([`src/`](./src))
 - API: auth, classrooms, and enrollments ([`pages/api/`](./pages/api), [`lib/`](./lib))
@@ -49,8 +49,11 @@ See [README_API.md](./README_API.md) for request bodies and status codes.
 | `POST` | `/api/auth/refresh` | Cookie session |
 | `POST` | `/api/auth/logout` | Cookie session |
 | `POST` | `/api/classrooms` | Teacher |
-| `GET` | `/api/classrooms` | Teacher list, or public active rooms |
+| `GET` | `/api/classrooms` | Teacher list (with roster and messages), or public active rooms |
 | `POST` | `/api/classrooms/:id/join` | Student |
+| `GET` | `/api/classrooms/:id/students` | Teacher |
+| `GET` | `/api/classrooms/:id/messages` | Teacher or enrolled student |
+| `POST` | `/api/classrooms/:id/messages` | Teacher |
 
 ## Database
 
